@@ -1,0 +1,7 @@
+<resources>
+
+    <declare-styleable name="GraphViewPager">
+        <attr name="heightToWidthRatio" format="float" />
+    </declare-styleable>
+
+</resources>

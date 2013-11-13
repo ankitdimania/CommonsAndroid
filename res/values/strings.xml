@@ -1,0 +1,7 @@
+<resources>
+    <!-- Progress Fragment -->
+    <string name="taking_a_while">This is taking a while&#8230;</string>
+
+    <!-- Others -->
+    <string name="retry">Retry</string>
+</resources>
