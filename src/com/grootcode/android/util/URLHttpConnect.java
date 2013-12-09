@@ -12,8 +12,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 
 /**
  * Util for making GET and POST requests.
@@ -31,7 +29,7 @@ public class URLHttpConnect {
         }
     }
 
-    private String mUserAgent;
+    private final String mUserAgent;
 
     private static URLHttpConnect sURLHttpConnect;
 

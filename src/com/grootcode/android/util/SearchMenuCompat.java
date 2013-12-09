@@ -1,9 +1,8 @@
 package com.grootcode.android.util;
 
 import android.app.Activity;
-import android.content.Context;
-import android.support.v4.view.MenuItemCompat;
 import android.app.SearchManager;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.SearchView.OnQueryTextListener;
 import android.view.Menu;

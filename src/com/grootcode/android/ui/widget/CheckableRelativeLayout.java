@@ -1,26 +1,29 @@
 package com.grootcode.android.ui.widget;
 
+import android.annotation.TargetApi;
 import android.content.Context;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.widget.Checkable;
-import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
-public class CheckableFrameLayout extends FrameLayout implements Checkable {
-    private static final int[] CheckedStateSet = {
+public class CheckableRelativeLayout extends RelativeLayout implements Checkable {
+    private static final int[] CHECKED_STATE_SET = {
         android.R.attr.state_checked
     };
 
     private boolean mChecked = false;
 
-    public CheckableFrameLayout(Context context) {
+    public CheckableRelativeLayout(Context context) {
         super(context);
     }
 
-    public CheckableFrameLayout(Context context, AttributeSet attrs) {
+    public CheckableRelativeLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public CheckableFrameLayout(Context context, AttributeSet attrs, int defStyle) {
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public CheckableRelativeLayout(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
 
@@ -43,10 +46,10 @@ public class CheckableFrameLayout extends FrameLayout implements Checkable {
     }
 
     @Override
-    protected int[] onCreateDrawableState(int extraSpace) {
+    public int[] onCreateDrawableState(int extraSpace) {
         final int[] drawableState = super.onCreateDrawableState(extraSpace + 1);
         if (isChecked()) {
-            mergeDrawableStates(drawableState, CheckedStateSet);
+            mergeDrawableStates(drawableState, CHECKED_STATE_SET);
         }
         return drawableState;
     }

@@ -6,20 +6,24 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import com.grootcode.android.R;
 
 /**
  * This fragment shows a login progress spinner. Upon reaching a timeout of 7 seconds (in case
  * of a poor network connection), the user can try again.
- *
+ * 
  * @author ankitd Sep13
  */
-public class ProgressFragment extends Fragment {
-    private static final int TRY_AGAIN_DELAY_MILLIS = 7 * 1000; // 7 seconds
+public abstract class ProgressFragment extends Fragment {
 
     private final Handler mHandler = new Handler();
 
-    public ProgressFragment() {}
+    private final int TRY_AGAIN_DELAY_MILLIS;
+
+    public ProgressFragment(int tryAgainDelayMillis) {
+        TRY_AGAIN_DELAY_MILLIS = tryAgainDelayMillis;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -41,10 +45,21 @@ public class ProgressFragment extends Fragment {
                     return;
                 }
 
+                if (onPostDelayed()) {
+                    return;
+                }
+
                 takingAWhilePanel.setVisibility(View.VISIBLE);
             }
         }, TRY_AGAIN_DELAY_MILLIS);
 
         return rootView;
     }
+
+    /**
+     * return true if the event was successful
+     * 
+     * @return
+     */
+    protected abstract boolean onPostDelayed();
 }

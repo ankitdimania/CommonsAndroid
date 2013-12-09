@@ -10,7 +10,7 @@ import java.io.StringWriter;
  */
 public class ErrorReportUtils {
 
-    private static String getStackTraceString(Throwable th) {
+    public static String getStackTraceString(Throwable th) {
         StringWriter sw = new StringWriter();
         th.printStackTrace(new PrintWriter(sw));
         return sw.toString();
