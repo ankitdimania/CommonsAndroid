@@ -32,6 +32,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.TranslateAnimation;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -514,6 +515,31 @@ public class UIUtils {
                 motionEvent.recycle();
             }
         }, 100);
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static void setTranslationY(View view, float translationY) {
+        if (UIUtils.hasHoneycomb()) {
+            view.setTranslationY(translationY);
+        } else {
+            TranslateAnimation translateAnim = new TranslateAnimation(0, 0, translationY, translationY);
+            translateAnim.setFillAfter(true);
+            translateAnim.setFillEnabled(true);
+            view.startAnimation(translateAnim);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    public static void setTranslationY(View view, float translationY, int durationMillis) {
+        if (UIUtils.hasHoneycombMR1()) {
+            view.animate().translationY(translationY).setDuration(durationMillis);
+        } else {
+            TranslateAnimation translateAnim = new TranslateAnimation(0, 0, translationY, translationY);
+            translateAnim.setFillAfter(true);
+            translateAnim.setFillEnabled(true);
+            translateAnim.setDuration(durationMillis);
+            view.startAnimation(translateAnim);
+        }
     }
 
     public static boolean isGoogleTV(Context context) {

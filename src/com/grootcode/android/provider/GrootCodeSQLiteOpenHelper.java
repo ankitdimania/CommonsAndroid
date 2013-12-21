@@ -10,10 +10,12 @@ import android.os.Build;
 public abstract class GrootCodeSQLiteOpenHelper extends SQLiteOpenHelper {
 
     private static String DATABASE_NAME;
+    protected final Context mContext;
 
     public GrootCodeSQLiteOpenHelper(Context context, String name, CursorFactory factory, int version) {
         super(context, name, factory, version);
         DATABASE_NAME = name;
+        mContext = context;
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -21,6 +23,7 @@ public abstract class GrootCodeSQLiteOpenHelper extends SQLiteOpenHelper {
             DatabaseErrorHandler errorHandler) {
         super(context, name, factory, version, errorHandler);
         DATABASE_NAME = name;
+        mContext = context;
     }
 
     public static void deleteDatabase(Context context) {

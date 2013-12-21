@@ -5,6 +5,7 @@ import java.util.Comparator;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,7 +17,20 @@ import android.widget.TextView;
 
 public class SimpleSectionedListAdapter extends BaseAdapter {
     private boolean mValid = true;
+
+    /**
+     * The resource indicating what views to inflate to display the content of this
+     * array adapter.
+     */
     private final int mSectionResourceId;
+
+    /**
+     * If the inflated resource is not a TextView, {@link #mFieldId} is used to find
+     * a TextView inside the inflated views hierarchy. This field must contain the
+     * identifier that matches the one defined in the resource file.
+     */
+    private int mFieldId = 0;
+
     private final LayoutInflater mLayoutInflater;
     private final ListAdapter mBaseAdapter;
     private final SparseArray<Section> mSections = new SparseArray<Section>();
@@ -36,10 +50,15 @@ public class SimpleSectionedListAdapter extends BaseAdapter {
         }
     }
 
-    public SimpleSectionedListAdapter(Context context, int sectionResourceId,
-                                      ListAdapter baseAdapter) {
+    public SimpleSectionedListAdapter(Context context, int sectionResourceId, ListAdapter baseAdapter) {
+        this(context, sectionResourceId, 0, baseAdapter);
+    }
+
+    public SimpleSectionedListAdapter(Context context, int sectionResourceId, int textViewResourceId,
+            ListAdapter baseAdapter) {
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mSectionResourceId = sectionResourceId;
+        mFieldId = textViewResourceId;
         mBaseAdapter = baseAdapter;
         mBaseAdapter.registerDataSetObserver(new DataSetObserver() {
             @Override
@@ -165,11 +184,28 @@ public class SimpleSectionedListAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         if (isSectionHeaderPosition(position)) {
-            TextView view = (TextView) convertView;
-            if (view == null) {
-                view = (TextView) mLayoutInflater.inflate(mSectionResourceId, parent, false);
+            View view;
+            TextView text;
+            if (convertView == null) {
+                view = mLayoutInflater.inflate(mSectionResourceId, parent, false);
+            } else {
+                view = convertView;
             }
-            view.setText(mSections.get(position).title);
+
+            try {
+                if (mFieldId == 0) {
+                    // If no custom field is assigned, assume the whole resource is a TextView
+                    text = (TextView) view;
+                } else {
+                    // Otherwise, find the TextView field within the layout
+                    text = (TextView) view.findViewById(mFieldId);
+                }
+            } catch (ClassCastException e) {
+                Log.e("ArrayAdapter", "You must supply a resource ID for a TextView");
+                throw new IllegalStateException("ArrayAdapter requires the resource ID to be a TextView", e);
+            }
+
+            text.setText(mSections.get(position).title);
             return view;
 
         } else {

@@ -1,5 +1,11 @@
 <resources>
 
+    <!-- Setup Search menu on older platforms -->
     <item name="menu_search" type="id"/>
+
+    <!-- Sticky View -->
+    <item name="sticky_placeholder" type="id"/>
+    <item name="sticky_view" type="id"/>
+    <item name="scroll_view" type="id"/>
 
 </resources>

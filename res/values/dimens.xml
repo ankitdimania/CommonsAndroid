@@ -1,3 +1,7 @@
 <resources>
+
+    <!-- body content -->
     <dimen name="element_spacing_normal">8dp</dimen>
+    <dimen name="content_padding_normal">16dp</dimen>
+
 </resources>
