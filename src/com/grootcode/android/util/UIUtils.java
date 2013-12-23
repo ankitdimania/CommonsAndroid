@@ -2,8 +2,16 @@ package com.grootcode.android.util;
 
 import static com.grootcode.android.util.LogUtils.LOGE;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import android.annotation.TargetApi;
@@ -16,14 +24,22 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -32,9 +48,15 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.view.animation.TranslateAnimation;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.grootcode.android.R;
 
 /**
  * An assortment of UI helpers.
@@ -72,7 +94,8 @@ public class UIUtils {
     // = Uri.parse("https://developers.google.com/events/io/sessions/");
 
     private static StyleSpan sBoldSpan = new StyleSpan(Typeface.BOLD);
-    private static ForegroundColorSpan sColorSpan = new ForegroundColorSpan(0xff111111);
+    public static ForegroundColorSpan sBlackColorSpan = new ForegroundColorSpan(Color.BLACK);
+    public static ForegroundColorSpan sWhiteColorSpan = new ForegroundColorSpan(Color.WHITE);
 
     private static CharSequence sEmptyRoomText;
 
@@ -82,7 +105,9 @@ public class UIUtils {
 
     public static final String GOOGLE_PLUS_PACKAGE_NAME = "com.google.android.apps.plus";
 
+    public static final int ANIMATION_TIME = 300;
     public static final int ANIMATION_FADE_IN_TIME = 250;
+    public static final int ANIMATION_TRANSLATE_TIME = 200;
     public static final String TRACK_ICONS_TAG = "tracks";
 
     // /**
@@ -130,16 +155,15 @@ public class UIUtils {
     // return DateUtils.formatDateRange(context, formatter, blockStart, blockEnd, TIME_FLAGS,
     // PrefUtils.getDisplayTimeZone(context).getID()).toString();
     // }
-    //
-    // public static boolean isSameDayDisplay(long time1, long time2, Context context) {
-    // TimeZone displayTimeZone = PrefUtils.getDisplayTimeZone(context);
-    // Calendar cal1 = Calendar.getInstance(displayTimeZone);
-    // Calendar cal2 = Calendar.getInstance(displayTimeZone);
-    // cal1.setTimeInMillis(time1);
-    // cal2.setTimeInMillis(time2);
-    // return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)
-    // && cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
-    // }
+
+    public static boolean isSameDay(TimeZone displayTimeZone, long time1, long time2) {
+        Calendar cal1 = Calendar.getInstance(displayTimeZone);
+        Calendar cal2 = Calendar.getInstance(displayTimeZone);
+        cal1.setTimeInMillis(time1);
+        cal2.setTimeInMillis(time2);
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)
+                && cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
+    }
 
     /**
      * Populate the given {@link android.widget.TextView} with the requested text, formatting
@@ -222,6 +246,15 @@ public class UIUtils {
      * braces, turn those areas into bold spans, removing the curly braces.
      */
     public static Spannable buildStyledSnippet(String snippet) {
+        return buildStyledSnippet(snippet, null);
+    }
+
+    private static SpannableString sEmptySnabbleString = new SpannableString("");
+
+    public static Spannable buildStyledSnippet(String snippet, ForegroundColorSpan colorSpan) {
+        if (TextUtils.isEmpty(snippet)) {
+            return sEmptySnabbleString;
+        }
         final SpannableStringBuilder builder = new SpannableStringBuilder(snippet);
 
         // Walk through string, inserting bold snippet spans
@@ -235,7 +268,9 @@ public class UIUtils {
 
             // Insert bold style
             builder.setSpan(sBoldSpan, startIndex - delta, endIndex - delta - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            builder.setSpan(sColorSpan, startIndex - delta, endIndex - delta - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (colorSpan != null) {
+                builder.setSpan(colorSpan, startIndex - delta, endIndex - delta - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
 
             delta += 2;
         }
@@ -281,87 +316,82 @@ public class UIUtils {
         return ((30 * Color.red(color) + 59 * Color.green(color) + 11 * Color.blue(color)) / 100) <= BRIGHTNESS_THRESHOLD;
     }
 
-    // /**
-    // * Create the track icon bitmap. Don't call this directly, instead use either
-    // * {@link UIUtils.TrackIconAsyncTask} or {@link UIUtils.TrackIconViewAsyncTask} to
-    // * asynchronously load the track icon.
-    // */
-    // private static Bitmap createTrackIcon(Context context, String trackName, int trackColor) {
-    // final Resources res = context.getResources();
-    // int iconSize = res.getDimensionPixelSize(R.dimen.track_icon_source_size);
-    // Bitmap icon = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888);
-    // Canvas canvas = new Canvas(icon);
-    // Paint paint = new Paint();
-    // paint.setAntiAlias(true);
-    // paint.setColor(trackColor);
-    // canvas.drawCircle(iconSize / 2, iconSize / 2, iconSize / 2, paint);
-    //
-    // int iconResId = res.getIdentifier(
-    // "track_" + ParserUtils.sanitizeId(trackName),
-    // "drawable", context.getPackageName());
-    // if (iconResId != 0) {
-    // Drawable sourceIconDrawable = res.getDrawable(iconResId);
-    // sourceIconDrawable.setBounds(0, 0, iconSize, iconSize);
-    // sourceIconDrawable.draw(canvas);
-    // }
-    //
-    // return icon;
-    // }
+    /**
+     * Create the track icon bitmap. Don't call this directly, instead use either
+     * {@link UIUtils.TrackIconAsyncTask} or {@link UIUtils.TrackIconViewAsyncTask} to
+     * asynchronously load the track icon.
+     */
+    private static Bitmap createTrackIcon(Context context, String iconName, int iconColor, int iconSize) {
+        final Resources res = context.getResources();
+        Bitmap icon = Bitmap.createBitmap(iconSize, iconSize, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(icon);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setColor(iconColor);
+        canvas.drawCircle(iconSize / 2, iconSize / 2, iconSize / 2, paint);
 
-    // /**
-    // * Synchronously get the track icon bitmap. Don't call this from the main thread, instead use
-    // either
-    // * {@link UIUtils.TrackIconAsyncTask} or {@link UIUtils.TrackIconViewAsyncTask} to
-    // * asynchronously load the track icon.
-    // */
-    // public static Bitmap getTrackIconSync(Context ctx, String trackName, int trackColor) {
-    //
-    // if (TextUtils.isEmpty(trackName)) {
-    // return null;
-    // }
-    //
-    // // Find a suitable disk cache directory for the track icons and create if it doesn't
-    // // already exist.
-    // File outputDir = ImageLoader.getDiskCacheDir(ctx, TRACK_ICONS_TAG);
-    // if (!outputDir.exists()) {
-    // outputDir.mkdirs();
-    // }
-    //
-    // // Generate a unique filename to store this track icon in using a hash function.
-    // File imageFile = new File(outputDir + File.separator + hashKeyForDisk(trackName));
-    //
-    // Bitmap bitmap = null;
-    //
-    // // If file already exists and is readable, try and decode the bitmap from the disk.
-    // if (imageFile.exists() && imageFile.canRead()) {
-    // bitmap = BitmapFactory.decodeFile(imageFile.toString());
-    // }
-    //
-    // // If bitmap is still null here the track icon was not found in the disk cache.
-    // if (bitmap == null) {
-    //
-    // // Create the icon using the provided track name and color.
-    // bitmap = UIUtils.createTrackIcon(ctx, trackName, trackColor);
-    //
-    // // Now write it out to disk for future use.
-    // BufferedOutputStream outputStream = null;
-    // try {
-    // outputStream = new BufferedOutputStream(new FileOutputStream(imageFile));
-    // bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-    // } catch (FileNotFoundException e) {
-    // LOGE(TAG, "TrackIconAsyncTask - unable to open file - " + e);
-    // } finally {
-    // if (outputStream != null) {
-    // try {
-    // outputStream.close();
-    // } catch (IOException ignored) {
-    // }
-    // }
-    // }
-    // }
-    //
-    // return bitmap;
-    // }
+        int iconResId = res.getIdentifier(ParserUtils.sanitizeId(iconName), "drawable", context.getPackageName());
+        if (iconResId != 0) {
+            Drawable sourceIconDrawable = res.getDrawable(iconResId);
+            sourceIconDrawable.setBounds(0, 0, iconSize, iconSize);
+            sourceIconDrawable.draw(canvas);
+        }
+
+        return icon;
+    }
+
+    /**
+     * Synchronously get the track icon bitmap. Don't call this from the main thread, instead use
+     * either {@link UIUtils.TrackIconAsyncTask} or {@link UIUtils.TrackIconViewAsyncTask} to
+     * asynchronously load the track icon.
+     */
+    public static Bitmap getTrackIconSync(Context ctx, String iconName, int iconColor, int iconSize) {
+
+        if (TextUtils.isEmpty(iconName)) {
+            return null;
+        }
+
+        // Find a suitable disk cache directory for the track icons and create if it doesn't
+        // already exist.
+        File outputDir = ImageLoader.getDiskCacheDir(ctx, TRACK_ICONS_TAG);
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        // Generate a unique filename to store this track icon in using a hash function.
+        File imageFile = new File(outputDir + File.separator + hashKeyForDisk(iconName));
+
+        Bitmap bitmap = null;
+
+        // If file already exists and is readable, try and decode the bitmap from the disk.
+        if (imageFile.exists() && imageFile.canRead()) {
+            bitmap = BitmapFactory.decodeFile(imageFile.toString());
+        }
+
+        // If bitmap is still null here the track icon was not found in the disk cache.
+        if (bitmap == null) {
+
+            // Create the icon using the provided track name and color.
+            bitmap = UIUtils.createTrackIcon(ctx, iconName, iconColor, iconSize);
+
+            // Now write it out to disk for future use.
+            BufferedOutputStream outputStream = null;
+            try {
+                outputStream = new BufferedOutputStream(new FileOutputStream(imageFile));
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            } catch (FileNotFoundException e) {
+                LOGE(TAG, "TrackIconAsyncTask - unable to open file - " + e);
+            } finally {
+                if (outputStream != null) {
+                    try {
+                        outputStream.close();
+                    } catch (IOException ignored) {}
+                }
+            }
+        }
+
+        return bitmap;
+    }
 
     /**
      * A hashing method that changes a string (like a URL) into a hash suitable for using as a
@@ -392,108 +422,107 @@ public class UIUtils {
         return sb.toString();
     }
 
-    // /**
-    // * Asynchronously load the track icon bitmap. To use, subclass and override
-    // * {@link #onPostExecute(android.graphics.Bitmap)} which passes in the generated track icon
-    // * bitmap.
-    // */
-    // public static abstract class TrackIconAsyncTask extends AsyncTask<Context, Void, Bitmap> {
-    // private String mTrackName;
-    // private int mTrackColor;
-    // private BitmapCache mBitmapCache;
-    //
-    // public TrackIconAsyncTask(String trackName, int trackColor) {
-    // mTrackName = trackName;
-    // mTrackColor = trackColor;
-    // }
-    //
-    // public TrackIconAsyncTask(String trackName, int trackColor, BitmapCache bitmapCache) {
-    // mTrackName = trackName;
-    // mTrackColor = trackColor;
-    // mBitmapCache = bitmapCache;
-    // }
-    //
-    // @Override
-    // protected Bitmap doInBackground(Context... contexts) {
-    //
-    // Bitmap bitmap = getTrackIconSync(contexts[0], mTrackName, mTrackColor);
-    //
-    // // Store bitmap in memory cache for future use.
-    // if (bitmap != null && mBitmapCache != null) {
-    // mBitmapCache.addBitmapToCache(mTrackName, bitmap);
-    // }
-    //
-    // return bitmap;
-    // }
-    //
-    // protected abstract void onPostExecute(Bitmap bitmap);
-    // }
-    //
-    // /**
-    // * A subclass of {@link TrackIconAsyncTask} that loads the generated track icon bitmap into
-    // * the provided {@link android.widget.ImageView}. This class also handles concurrency in the
-    // case the
-    // * ImageView is recycled (eg. in a ListView adapter) so that the incorrect image will not show
-    // * in a recycled view.
-    // */
-    // public static class TrackIconViewAsyncTask extends TrackIconAsyncTask {
-    // private WeakReference<ImageView> mImageViewReference;
-    //
-    // public TrackIconViewAsyncTask(ImageView imageView, String trackName, int trackColor,
-    // BitmapCache bitmapCache) {
-    // super(trackName, trackColor, bitmapCache);
-    //
-    // // Store this AsyncTask in the tag of the ImageView so we can compare if the same task
-    // // is still running on this ImageView once processing is complete. This helps with
-    // // view recycling that takes place in a ListView type adapter.
-    // imageView.setTag(this);
-    //
-    // // If we have a BitmapCache, check if this track icon is available already.
-    // Bitmap bitmap =
-    // bitmapCache != null ? bitmapCache.getBitmapFromMemCache(trackName) : null;
-    //
-    // // If found in BitmapCache set the Bitmap directly and cancel the task.
-    // if (bitmap != null) {
-    // imageView.setImageBitmap(bitmap);
-    // cancel(true);
-    // } else {
-    // // Otherwise clear the ImageView and store a WeakReference for later use. Better
-    // // to use a WeakReference here in case the task runs long and the holding Activity
-    // // or Fragment goes away.
-    // imageView.setImageDrawable(null);
-    // mImageViewReference = new WeakReference<ImageView>(imageView);
-    // }
-    // }
-    //
-    // @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    // @Override
-    // protected void onPostExecute(Bitmap bitmap) {
-    // ImageView imageView = mImageViewReference != null ? mImageViewReference.get() : null;
-    //
-    // // If ImageView is still around, bitmap processed OK and this task is not canceled.
-    // if (imageView != null && bitmap != null && !isCancelled()) {
-    //
-    // // Ensure this task is still the same one assigned to this ImageView, if not the
-    // // view was likely recycled and a new task with a different icon is now running
-    // // on the view and we shouldn't proceed.
-    // if (this.equals(imageView.getTag())) {
-    //
-    // // On HC-MR1 run a quick fade-in animation.
-    // if (hasHoneycombMR1()) {
-    // imageView.setAlpha(0f);
-    // imageView.setImageBitmap(bitmap);
-    // imageView.animate()
-    // .alpha(1f)
-    // .setDuration(ANIMATION_FADE_IN_TIME)
-    // .setListener(null);
-    // } else {
-    // // Before HC-MR1 set the Bitmap directly.
-    // imageView.setImageBitmap(bitmap);
-    // }
-    // }
-    // }
-    // }
-    // }
+    /**
+     * Asynchronously load the track icon bitmap. To use, subclass and override
+     * {@link #onPostExecute(android.graphics.Bitmap)} which passes in the generated track icon
+     * bitmap.
+     */
+    public static abstract class TrackIconAsyncTask extends AsyncTask<Context, Void, Bitmap> {
+        private final String mIconName;
+        private final int mIconColor;
+        private final int mIconSize;
+        private BitmapCache mBitmapCache;
+
+        public TrackIconAsyncTask(String iconName, int iconColor, int iconSize) {
+            mIconName = iconName;
+            mIconColor = iconColor;
+            mIconSize = iconSize;
+        }
+
+        public TrackIconAsyncTask(String iconName, int iconColor, int iconSize, BitmapCache bitmapCache) {
+            mIconName = iconName;
+            mIconColor = iconColor;
+            mIconSize = iconSize;
+            mBitmapCache = bitmapCache;
+        }
+
+        @Override
+        protected Bitmap doInBackground(Context... contexts) {
+
+            Bitmap bitmap = getTrackIconSync(contexts[0], mIconName, mIconColor, mIconSize);
+
+            // Store bitmap in memory cache for future use.
+            if (bitmap != null && mBitmapCache != null) {
+                mBitmapCache.addBitmapToCache(mIconName, bitmap);
+            }
+
+            return bitmap;
+        }
+
+        @Override
+        protected abstract void onPostExecute(Bitmap bitmap);
+    }
+
+    /**
+     * A subclass of {@link TrackIconAsyncTask} that loads the generated track icon bitmap into the
+     * provided {@link android.widget.ImageView}. This class also handles concurrency in the case
+     * the ImageView is recycled (eg. in a ListView adapter) so that the incorrect image will not
+     * show in a recycled view.
+     */
+    public static class TrackIconViewAsyncTask extends TrackIconAsyncTask {
+        private WeakReference<ImageView> mImageViewReference;
+
+        public TrackIconViewAsyncTask(ImageView imageView, String iconName, int iconColor, int iconSize,
+                BitmapCache bitmapCache) {
+            super(iconName, iconColor, iconSize, bitmapCache);
+
+            // Store this AsyncTask in the tag of the ImageView so we can compare if the same task
+            // is still running on this ImageView once processing is complete. This helps with
+            // view recycling that takes place in a ListView type adapter.
+            imageView.setTag(this);
+
+            // If we have a BitmapCache, check if this track icon is available already.
+            Bitmap bitmap = bitmapCache != null ? bitmapCache.getBitmapFromMemCache(iconName) : null;
+
+            // If found in BitmapCache set the Bitmap directly and cancel the task.
+            if (bitmap != null) {
+                imageView.setImageBitmap(bitmap);
+                cancel(true);
+            } else {
+                // Otherwise clear the ImageView and store a WeakReference for later use. Better
+                // to use a WeakReference here in case the task runs long and the holding Activity
+                // or Fragment goes away.
+                imageView.setImageDrawable(null);
+                mImageViewReference = new WeakReference<ImageView>(imageView);
+            }
+        }
+
+        @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            ImageView imageView = mImageViewReference != null ? mImageViewReference.get() : null;
+
+            // If ImageView is still around, bitmap processed OK and this task is not canceled.
+            if (imageView != null && bitmap != null && !isCancelled()) {
+
+                // Ensure this task is still the same one assigned to this ImageView, if not the
+                // view was likely recycled and a new task with a different icon is now running
+                // on the view and we shouldn't proceed.
+                if (this.equals(imageView.getTag())) {
+
+                    // On HC-MR1 run a quick fade-in animation.
+                    if (hasHoneycombMR1()) {
+                        imageView.setAlpha(0f);
+                        imageView.setImageBitmap(bitmap);
+                        imageView.animate().alpha(1f).setDuration(ANIMATION_FADE_IN_TIME).setListener(null);
+                    } else {
+                        // Before HC-MR1 set the Bitmap directly.
+                        imageView.setImageBitmap(bitmap);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Used to set focus and show keyboard (if needed) for a specified text field
@@ -517,10 +546,42 @@ public class UIUtils {
         }, 100);
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    private static final Interpolator sInterpolator = new DecelerateInterpolator();
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public static void setTranslationY(View view, float translationY) {
-        if (UIUtils.hasHoneycomb()) {
-            view.setTranslationY(translationY);
+        if (UIUtils.hasICS()) {
+            ViewPropertyAnimator animator = (ViewPropertyAnimator) view.getTag(R.id.view_translationY_animation);
+
+            // In case there is already an animation going on with the view, continue the animation
+            // upto remaining tranlationY
+            if (animator != null) {
+                animator.cancel();
+                view.clearAnimation();
+                long durationMillis = (Long) view.getTag(R.id.view_translationY_animation_duration);
+                long startTimeMillis = (Long) view.getTag(R.id.view_translationY_animation_starttime);
+
+                long elapsedDurationMillis = System.currentTimeMillis() - startTimeMillis;
+                long remainingDurationMillis = durationMillis - elapsedDurationMillis;
+                if (remainingDurationMillis > 0) {
+                    // Animate to current position as per previous animation, interpolated to
+                    // current destination
+                    float previousFromTranlationY = (Float) view
+                            .getTag(R.id.view_translationY_animation_fromTranlationY);
+                    float previousToTranlationY = (Float) view.getTag(R.id.view_translationY_animation_toTranlationY);
+                    float diffToTarget = (previousToTranlationY - previousFromTranlationY)
+                            * (1 - sInterpolator.getInterpolation((float) elapsedDurationMillis / durationMillis));
+                    view.setTranslationY(translationY - diffToTarget);
+
+                    // animate to rest of the distance
+                    setTranslationY(view, translationY, remainingDurationMillis);
+                } else {
+                    view.setTag(R.id.view_translationY_animation, null);
+                    view.setTranslationY(translationY);
+                }
+            } else {
+                view.setTranslationY(translationY);
+            }
         } else {
             TranslateAnimation translateAnim = new TranslateAnimation(0, 0, translationY, translationY);
             translateAnim.setFillAfter(true);
@@ -530,14 +591,21 @@ public class UIUtils {
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public static void setTranslationY(View view, float translationY, int durationMillis) {
-        if (UIUtils.hasHoneycombMR1()) {
-            view.animate().translationY(translationY).setDuration(durationMillis);
+    public static void setTranslationY(View view, float translationY, long durationMillis) {
+        if (UIUtils.hasICS()) {
+            ViewPropertyAnimator animator = view.animate().translationY(translationY).setDuration(durationMillis)
+                    .setInterpolator(sInterpolator);
+            view.setTag(R.id.view_translationY_animation, animator);
+            view.setTag(R.id.view_translationY_animation_duration, durationMillis);
+            view.setTag(R.id.view_translationY_animation_starttime, System.currentTimeMillis());
+            view.setTag(R.id.view_translationY_animation_fromTranlationY, view.getTranslationY());
+            view.setTag(R.id.view_translationY_animation_toTranlationY, translationY);
+
         } else {
+            // No animation working on view, since fromTranlationY = toTranslationY
             TranslateAnimation translateAnim = new TranslateAnimation(0, 0, translationY, translationY);
             translateAnim.setFillAfter(true);
             translateAnim.setFillEnabled(true);
-            translateAnim.setDuration(durationMillis);
             view.startAnimation(translateAnim);
         }
     }

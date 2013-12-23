@@ -1,20 +1,4 @@
 /*
- * Copyright 2012 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
  * Modifications:
  * -Imported from AOSP frameworks/base/core/java/com/android/internal/content
  * -Changed package name
@@ -22,17 +6,18 @@
 
 package com.grootcode.android.util;
 
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.text.TextUtils;
+import static com.grootcode.android.util.LogUtils.LOGV;
+import static com.grootcode.android.util.LogUtils.makeLogTag;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static com.grootcode.android.util.LogUtils.*;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 
 /**
  * Helper for building selection clauses for {@link android.database.sqlite.SQLiteDatabase}. Each
@@ -43,9 +28,9 @@ public class SelectionBuilder {
     private static final String TAG = makeLogTag(SelectionBuilder.class);
 
     private String mTable = null;
-    private Map<String, String> mProjectionMap = Maps.newHashMap();
-    private StringBuilder mSelection = new StringBuilder();
-    private ArrayList<String> mSelectionArgs = Lists.newArrayList();
+    private final Map<String, String> mProjectionMap = Maps.newHashMap();
+    private final StringBuilder mSelection = new StringBuilder();
+    private final ArrayList<String> mSelectionArgs = Lists.newArrayList();
 
     /**
      * Reset any internal state, allowing this builder to be recycled.

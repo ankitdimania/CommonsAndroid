@@ -3,11 +3,13 @@
     <declare-styleable name="GraphViewPager">
         <attr name="heightToWidthRatio" format="float" />
     </declare-styleable>
-
     <declare-styleable name="BezelImageView">
         <attr name="maskDrawable" format="reference" />
         <attr name="borderDrawable" format="reference" />
         <attr name="desaturateOnPress" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="FrameLayout">
+        <attr name="foreground" format="reference|color" />
     </declare-styleable>
 
 </resources>

@@ -6,7 +6,7 @@ import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import com.grootcode.android.R;
 import com.grootcode.android.ui.widget.ObservableScrollView;
@@ -94,10 +94,10 @@ public class StickyCustomScrolling implements ObservableScrollView.Callbacks {
     private float oldTop = -1;
 
     private void onScrollChanged() {
-        float newTop = Math.max(mStickyViewTopPadding, (getPlaceHolderTop() - mScrollView.getScrollY()));
+        float newTop = getNewTop();
 
         if (newTop != oldTop) {
-            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mStickyView.getLayoutParams();
+            RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) mStickyView.getLayoutParams();
             UIUtils.setTranslationY(mStickyView, newTop);
 
             mScrollView.getGlobalVisibleRect(mBufferRect);
@@ -116,9 +116,10 @@ public class StickyCustomScrolling implements ObservableScrollView.Callbacks {
     public void setStickyViewTopPadding(int padding) {
         if (padding != mStickyViewTopPadding) {
             mStickyViewTopPadding = padding;
-            float newTop = Math.max(mStickyViewTopPadding, (getPlaceHolderTop() - mScrollView.getScrollY()));
+            float newTop = getNewTop();
             if (newTop != oldTop) {
-                UIUtils.setTranslationY(mStickyView, newTop, UIUtils.ANIMATION_FADE_IN_TIME);
+                UIUtils.setTranslationY(mStickyView, newTop, UIUtils.ANIMATION_TRANSLATE_TIME);
+                oldTop = newTop;
             }
         }
     }
@@ -132,5 +133,9 @@ public class StickyCustomScrolling implements ObservableScrollView.Callbacks {
             parent = (ViewGroup) parent.getParent();
         }
         return top;
+    }
+
+    private float getNewTop() {
+        return Math.max(getPlaceHolderTop(), mScrollView.getScrollY() + mStickyViewTopPadding);
     }
 }

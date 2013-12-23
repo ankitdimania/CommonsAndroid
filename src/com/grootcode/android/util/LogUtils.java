@@ -1,5 +1,8 @@
 package com.grootcode.android.util;
 
+import java.util.Locale;
+
+import android.text.TextUtils;
 import android.util.Log;
 
 public class LogUtils {
@@ -32,56 +35,108 @@ public class LogUtils {
         return makeLogTag(cls.getSimpleName());
     }
 
-    public static void LOGD(final String tag, String message) {
+    public static void LOGD(final String tag, String format, Object... args) {
         // noinspection PointlessBooleanExpression,ConstantConditions
         if (BuildConfigUtils.BUILD_CONFIG_DEBUG || Log.isLoggable(tag, Log.DEBUG)) {
-            Log.d(tag, message);
+            Log.d(tag, buildMessage(format, args));
         }
     }
 
     public static void LOGD(final String tag, String message, Throwable cause) {
         // noinspection PointlessBooleanExpression,ConstantConditions
         if (BuildConfigUtils.BUILD_CONFIG_DEBUG || Log.isLoggable(tag, Log.DEBUG)) {
-            Log.d(tag, message, cause);
+            Log.d(tag, buildMessage(message), cause);
         }
     }
 
-    public static void LOGV(final String tag, String message) {
+    public static void LOGD(final String tag, Throwable cause, String format, Object... args) {
+        // noinspection PointlessBooleanExpression,ConstantConditions
+        if (BuildConfigUtils.BUILD_CONFIG_DEBUG || Log.isLoggable(tag, Log.DEBUG)) {
+            Log.d(tag, buildMessage(format, args), cause);
+        }
+    }
+
+    public static void LOGV(final String tag, String format, Object... args) {
         // noinspection PointlessBooleanExpression,ConstantConditions
         if (BuildConfigUtils.BUILD_CONFIG_DEBUG && Log.isLoggable(tag, Log.VERBOSE)) {
-            Log.v(tag, message);
+            Log.v(tag, buildMessage(format, args));
         }
     }
 
     public static void LOGV(final String tag, String message, Throwable cause) {
         // noinspection PointlessBooleanExpression,ConstantConditions
         if (BuildConfigUtils.BUILD_CONFIG_DEBUG && Log.isLoggable(tag, Log.VERBOSE)) {
-            Log.v(tag, message, cause);
+            Log.v(tag, buildMessage(message), cause);
         }
     }
 
-    public static void LOGI(final String tag, String message) {
-        Log.i(tag, message);
+    public static void LOGV(final String tag, Throwable cause, String format, Object... args) {
+        // noinspection PointlessBooleanExpression,ConstantConditions
+        if (BuildConfigUtils.BUILD_CONFIG_DEBUG && Log.isLoggable(tag, Log.VERBOSE)) {
+            Log.v(tag, buildMessage(format, args), cause);
+        }
+    }
+
+    public static void LOGI(final String tag, String format, Object... args) {
+        Log.i(tag, buildMessage(format, args));
+    }
+
+    public static void LOGI(final String tag, Throwable cause, String format, Object... args) {
+        Log.i(tag, buildMessage(format, args), cause);
     }
 
     public static void LOGI(final String tag, String message, Throwable cause) {
-        Log.i(tag, message, cause);
+        Log.i(tag, buildMessage(message), cause);
     }
 
-    public static void LOGW(final String tag, String message) {
-        Log.w(tag, message);
+    public static void LOGW(final String tag, String format, Object... args) {
+        Log.w(tag, buildMessage(format, args));
     }
 
     public static void LOGW(final String tag, String message, Throwable cause) {
-        Log.w(tag, message, cause);
+        Log.w(tag, buildMessage(message), cause);
     }
 
-    public static void LOGE(final String tag, String message) {
-        Log.e(tag, message);
+    public static void LOGW(final String tag, Throwable cause, String format, Object... args) {
+        Log.w(tag, buildMessage(format, args), cause);
+    }
+
+    public static void LOGE(final String tag, String format, Object... args) {
+        Log.e(tag, buildMessage(format, args));
     }
 
     public static void LOGE(final String tag, String message, Throwable cause) {
-        Log.e(tag, message, cause);
+        Log.e(tag, buildMessage(message), cause);
+    }
+
+    public static void LOGE(final String tag, Throwable cause, String format, Object... args) {
+        Log.e(tag, buildMessage(format, args), cause);
+    }
+
+    /**
+     * Formats the caller's provided message and prepends useful info like
+     * calling thread ID and method name.
+     */
+    private static String buildMessage(String format, Object... args) {
+        String msg = (args == null || args.length == 0) ? format : String.format(Locale.US, format, args);
+        Thread currentThread = Thread.currentThread();
+        StackTraceElement[] trace = currentThread.getStackTrace();
+
+        String caller = "<unknown>";
+        // Walk up the stack looking for the first caller outside of VolleyLog.
+        // It will be at least two frames up, so start there.
+        for (int i = 2; i < trace.length; ++i) {
+            String clazz = trace[i].getClassName();
+            if (!TextUtils.equals(clazz, LogUtils.class.getName())) {
+                String callingClass = trace[i].getClassName();
+                callingClass = callingClass.substring(callingClass.lastIndexOf('.') + 1);
+                callingClass = callingClass.substring(callingClass.lastIndexOf('$') + 1);
+
+                caller = callingClass + "." + trace[i].getMethodName() + ":" + trace[i].getLineNumber();
+                break;
+            }
+        }
+        return String.format(Locale.US, "[%d] %s: %s", currentThread.getId(), caller, msg);
     }
 
     private LogUtils() {}

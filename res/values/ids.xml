@@ -8,4 +8,11 @@
     <item name="sticky_view" type="id"/>
     <item name="scroll_view" type="id"/>
 
+    <!-- UIUtils -->
+    <item name="view_translationY_animation" type="id"/>
+    <item name="view_translationY_animation_starttime" type="id"/>
+    <item name="view_translationY_animation_duration" type="id"/>
+    <item name="view_translationY_animation_fromTranlationY" type="id"/>
+    <item name="view_translationY_animation_toTranlationY" type="id"/>
+
 </resources>

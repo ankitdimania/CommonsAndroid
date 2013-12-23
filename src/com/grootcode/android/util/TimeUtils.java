@@ -63,8 +63,9 @@ public class TimeUtils {
     }
 
     /**
-     * The difference between this and {@link DateUtils#getRelativeTimeSpanString(Context, long)} is
-     * the this returns alphabetic date if year is not same.
+     * The difference between this method and
+     * {@link DateUtils#getRelativeTimeSpanString(Context, long)} is that this method returns
+     * alphabetic date if year is not same.
      * {@link DateUtils#getRelativeTimeSpanString(Context, long)} returns numeric date if year is
      * not same.
      * 
