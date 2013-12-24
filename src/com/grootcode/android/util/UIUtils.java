@@ -11,6 +11,7 @@ import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
@@ -93,9 +94,11 @@ public class UIUtils {
     // private static final Uri SESSION_DETAIL_WEB_URL_PREFIX
     // = Uri.parse("https://developers.google.com/events/io/sessions/");
 
-    private static StyleSpan sBoldSpan = new StyleSpan(Typeface.BOLD);
-    public static ForegroundColorSpan sBlackColorSpan = new ForegroundColorSpan(Color.BLACK);
-    public static ForegroundColorSpan sWhiteColorSpan = new ForegroundColorSpan(Color.WHITE);
+    private static List<StyleSpan> sBoldSpanList = Lists.newArrayList(new StyleSpan(Typeface.BOLD));
+    public static List<ForegroundColorSpan> sBlackColorSpanList = Lists.newArrayList(new ForegroundColorSpan(
+            Color.BLACK));
+    public static List<ForegroundColorSpan> sWhiteColorSpanList = Lists.newArrayList(new ForegroundColorSpan(
+            Color.WHITE));
 
     private static CharSequence sEmptyRoomText;
 
@@ -251,14 +254,14 @@ public class UIUtils {
 
     private static SpannableString sEmptySnabbleString = new SpannableString("");
 
-    public static Spannable buildStyledSnippet(String snippet, ForegroundColorSpan colorSpan) {
+    public static Spannable buildStyledSnippet(String snippet, List<ForegroundColorSpan> colorSpanList) {
         if (TextUtils.isEmpty(snippet)) {
             return sEmptySnabbleString;
         }
         final SpannableStringBuilder builder = new SpannableStringBuilder(snippet);
 
         // Walk through string, inserting bold snippet spans
-        int startIndex, endIndex = -1, delta = 0;
+        int startIndex, endIndex = -1, delta = 0, count = 0;
         while ((startIndex = snippet.indexOf('{', endIndex)) != -1) {
             endIndex = snippet.indexOf('}', startIndex);
 
@@ -266,13 +269,23 @@ public class UIUtils {
             builder.delete(startIndex - delta, startIndex - delta + 1);
             builder.delete(endIndex - delta - 1, endIndex - delta);
 
+            if (sBoldSpanList.size() == count) {
+                sBoldSpanList.add(new StyleSpan(Typeface.BOLD));
+            }
             // Insert bold style
-            builder.setSpan(sBoldSpan, startIndex - delta, endIndex - delta - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            if (colorSpan != null) {
-                builder.setSpan(colorSpan, startIndex - delta, endIndex - delta - 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            builder.setSpan(sBoldSpanList.get(count), startIndex - delta, endIndex - delta - 1,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (colorSpanList != null) {
+                if (colorSpanList.size() == count) {
+                    int color = colorSpanList.get(colorSpanList.size() - 1).getForegroundColor();
+                    colorSpanList.add(new ForegroundColorSpan(color));
+                }
+                builder.setSpan(colorSpanList.get(count), startIndex - delta, endIndex - delta - 1,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
 
             delta += 2;
+            ++count;
         }
 
         return builder;
